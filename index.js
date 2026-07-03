@@ -4,7 +4,13 @@ const http = require('http');
 const PORT = process.env.PORT || 8080;
 
 const server = http.createServer((req, res) => {
-    if (req.method === 'POST' && req.url === '/broadcast') {
+    // 1. Добавляем обработку корня для Health Check (чтобы платформа видела, что сервер ЖИВ)
+    if (req.url === '/') {
+        res.writeHead(200);
+        res.end('Server is active');
+    } 
+    // 2. Логика broadcast
+    else if (req.method === 'POST' && req.url === '/broadcast') {
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', () => {
@@ -12,11 +18,13 @@ const server = http.createServer((req, res) => {
                 const announcement = JSON.parse(body);
                 const json = JSON.stringify(announcement);
                 const base64 = Buffer.from(json).toString('base64');
+                
                 wss.clients.forEach((client) => {
                     if (client.readyState === WebSocket.OPEN) {
                         client.send(base64);
                     }
                 });
+                
                 res.writeHead(200);
                 res.end('OK');
             } catch (e) {
@@ -24,7 +32,9 @@ const server = http.createServer((req, res) => {
                 res.end('Bad Request');
             }
         });
-    } else {
+    } 
+    // 3. Всё остальное — 404
+    else {
         res.writeHead(404);
         res.end();
     }
@@ -37,4 +47,7 @@ wss.on('connection', (ws) => {
     ws.on('close', () => console.log('Client disconnected'));
 });
 
-server.listen(PORT, () => console.log('Listening on ' + PORT));
+// 4. Привязка к 0.0.0.0 — чтобы контейнер слушал входящие запросы снаружи
+server.listen(PORT, '0.0.0.0', () => {
+    console.log('Server is listening on port ' + PORT);
+});
