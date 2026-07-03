@@ -51,3 +51,7 @@ wss.on('connection', (ws) => {
 server.listen(PORT, '0.0.0.0', () => {
     console.log('Server is listening on port ' + PORT);
 });
+
+setInterval(() => {
+    console.log('Keep-alive: Server is still alive');
+}, 30000); // Раз в 30 секунд в лог, чтобы процесс не казался "зависшим"
